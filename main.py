@@ -1,7 +1,7 @@
 from os import getenv
 from dotenv import load_dotenv
 
-from redis import Redis
+from redis import Redis, ConnectionPool
 from redis.exceptions import RedisError
 
 
@@ -11,20 +11,27 @@ class DotEnv:
     def __init__(self):
         """ # Загружаем переменные из .env файла """
         load_dotenv()
+        self.host = getenv("REDIS_HOST")  # Получаем хост
+        self.port = int(getenv("REDIS_PORT"))  # Получаем порт и преобразуем в int
         self.username = getenv(key="REDIS_USER")
         self.password = getenv(key="REDIS_USER_PASSWORD")
 
 de = DotEnv()
 
-
-r = Redis(host='localhost', port=6380, db=0, username=de.username, password=de.password)
-
+redis = Redis(connection_pool=ConnectionPool(  # Создаем пул соединений
+    host=de.host,
+    port=de.port,
+    db=0,
+    username=de.username,
+    password=de.password,
+    max_connections=10  # Укажите максимальное количество соединений в пуле
+))
 
 def test():
     try:
-        info = r.info()
+        info = redis.info()
         print(info['redis_version'])
-        response = r.ping()
+        response = redis.ping()
         if response:
             print("Подключение успешно!")
         else:
